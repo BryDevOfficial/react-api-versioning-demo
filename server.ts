@@ -1,13 +1,9 @@
-// server.ts (MySQL Version)
-import mysql from 'mysql2/promise';
+// server.ts (Supabase Version)
+import { createClient } from '@supabase/supabase-js';
 
-// 1. Setup MySQL Connection
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'root',
-  database: 'inventory_db'
-});
+const supabaseUrl = 'https://your-project-url.supabase.co';
+const supabaseKey = 'your-anon-key';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 Bun.serve({
   port: 3001,
@@ -17,17 +13,16 @@ Bun.serve({
 
     // API VERSION 1
     if (url.pathname === "/api/v1/inventory") {
-      // Manguha sa data gikan sa MySQL table
-      const [rows] = await pool.query("SELECT * FROM items");
-      return Response.json(rows, { headers });
+      const { data, error } = await supabase.from('items').select('*');
+      return Response.json(data || [], { headers });
     }
 
-    // API VERSION 2 (Transformation)
+    // API VERSION 2
     if (url.pathname === "/api/v2/inventory") {
-      const [rows] = await pool.query("SELECT * FROM items") as any[];
-      const transformed = rows.map(i => ({
+      const { data, error } = await supabase.from('items').select('*');
+      const transformed = (data || []).map(i => ({
         id: i.id,
-        productTitle: i.item_name, // MySQL column name is item_name
+        productTitle: i.name,
         stock: i.qty
       }));
       return Response.json(transformed, { headers });
@@ -37,4 +32,4 @@ Bun.serve({
   }
 });
 
-console.log("✅ MySQL Backend running at http://localhost:3001");
+console.log("✅ Supabase Backend running at http://localhost:3001");
